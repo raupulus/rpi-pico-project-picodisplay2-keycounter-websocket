@@ -7,61 +7,27 @@ from time import sleep
 
 gc.enable()
 
+
 class Api():
-    def __init__(self, controller, url, path, token, debug=False):
+    def __init__(self, controller, url, path, token, device_id, debug=False):
         self.URL = url
         self.TOKEN = token
+        self.DEVICE_ID = device_id
         self.URL_PATH = path
         self.CONTROLLER = controller
         self.DEBUG = debug
 
-    def download(self, datas):
-        return {
-            "test": "assdfsdf"
-        }
-
-    def upload(self, datas):
-        if self.DEBUG:
-            print('Api Uploading...')
-
-        if self.CONTROLLER.wifiIsConnected() == False:
-            return False
-
-        url = self.URL
-        url_path = self.URL_PATH
-        full_url = url + '/' + url_path
-        token = self.TOKEN
-
-        headers = {
-            'Content-type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ' + str(token),
-        }
-
+    def get_computers_list (self):
+        """
+        :return: List of computers retrieved from the API. If an error occurs, an empty dictionary is returned.
+        """
         try:
-            response = urequests.post(
-                full_url,
-                headers=headers,
-                json=ujson.dumps(datas),
-                timeout=3
-            )
+            response = urequests.get(self.URL + '/' + self.URL_PATH, headers={
+                "Authorization": "Bearer " + self.TOKEN })
+            data = ujson.loads(response.text)
 
+            return data
         except Exception as e:
             if self.DEBUG:
-                print('Error: ', e)
-
-            return False
-        finally:
-
-            if self.DEBUG:
-                print('Memoria antes de liberar: ', gc.mem_free())
-
-            gc.collect()
-
-            if self.DEBUG:
-                print("Memoria después de liberar:", gc.mem_free())
-
-        if self.DEBUG:
-            print('payload: ', response.json())
-            print('status code:', response.status_code)
-            print('wifi status: ', self.CONTROLLER.wifiIsConnected())
+                print("Error al obtener los datos: ", e)
+            return { }

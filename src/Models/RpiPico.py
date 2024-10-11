@@ -1,216 +1,241 @@
-
 from machine import ADC, Pin
 import network
 from time import sleep
 
+# Constants
+WIFI_DISCONNECTED = 0
+WIFI_CONNECTING = 1
+WIFI_CONNECTED = 3
 
-class RpiPico():
-    INTEGRATED_TEMP_CORRECTION = 27  # Temperatura interna para corregir lecturas
+
+class RpiPico:
+    INTEGRATED_TEMP_CORRECTION = 27  # Corrección de temperatura interna para ajustar lecturas
     adc_voltage_correction = 0.706
     voltage_working = 3.3
+    num_of_measurements = 0  # Número de mediciones de temperatura
 
     max = 0
     min = 0
     avg = 0
     current = 0
+    sum_of_temps = 0  # Suma de todas las lecturas de temperatura
     locked = False
 
-    # Wireless
+    # Inalámbrico
     wifi = None
 
-    def __init__(self, ssid=None, password=None, debug=False, country="BO"):
+    hostname = 'Rpi-Pico-W'
 
+    def __init__ (self, ssid=None, password=None, debug=False, country="ES",
+                  hostname="Rpi-Pico-W"):
+        """
+        Constructor de la clase RpiPico.
+
+        Args:
+            ssid (str): ID de red para la conexión Wi-Fi. Por defecto None.
+            password (str): Contraseña para la conexión Wi-Fi. Por defecto None.
+            debug (bool): Indica si se muestran los mensajes de debug. Por defecto False.
+            country (str): Código del país. Por defecto 'ES'.
+        """
         self.DEBUG = debug
-
         self.SSID = ssid
         self.PASSWORD = password
         self.COUNTRY = country
+        self.hostname = hostname
 
-        # Código de país para el Wireless
-        #rp2.country(country)
+        self.TEMP_SENSOR = ADC(4)  # Sensor interno de Raspberry Pi Pico.
 
-        self.TEMP_SENSOR = ADC(4)  # Sensor interno de raspberry pi pico.
+        self.LED_INTEGRATED = Pin("LED",
+                                  Pin.OUT)  # Definición del GPIO para el LED integrado
 
-        # Definición de GPIO
-        self.LED_INTEGRATED = Pin("LED", Pin.OUT)
+        self.adc_conversion_factor = self.voltage_working / 65535  # Factor de conversión de 16 bits
 
-        # 16bits factor de conversión, aunque la lectura real en raspberry pi pico es de 12bits.
-        self.adc_conversion_factor = self.voltage_working / 65535
+        if ssid and password:  # Si se proporcionan credenciales Wi-Fi, intenta la conexión
+            print('Iniciando la conexión inalámbrica')
+            self.wifi_connect(ssid, password)
 
-        # print('Tiene ssid y pass:', ssid and password)
-
-        # Si recibe credenciales para conectar por wifi, se conecta al instanciar.
-        if ssid and password:
-            print('Comienza conexión a wireless')
-            self.wifiConnect(ssid, password)
-
-        # Realizo primera lectura de temperatura para inicializar variables y no comenzar a evaluar con 0 en estadísticas.
         sleep(0.100)
-        self.resetStats()
 
-    def resetStats(self, temp=None):
-        """Reset Statistics"""
+        self.reset_stats()
 
-        temp = temp if temp else self.readSensorTemp()
+    def reset_stats (self, temp=None):
+        """
+        Reinicia las estadísticas de temperatura.
+
+        Args:
+            temp (float): Valor inicial con el que resetear las estadísticas. Por defecto None.
+        """
+        temp = temp if temp else self.read_sensor_temp()
         self.max = temp
         self.min = temp
         self.avg = temp
         self.current = temp
 
-    def readSensorTemp(self):
+    def read_sensor_temp (self):
+        """
+        Lee la temperatura actual del sensor.
+
+        Returns:
+            float: Temperatura leída.
+        """
+        # Continúa si no está bloqueado
         if self.locked:
             return self.current
 
-        reading = (self.TEMP_SENSOR.read_u16() * self.adc_conversion_factor) - \
-            self.adc_voltage_correction
-
-        value = self.INTEGRATED_TEMP_CORRECTION - reading / 0.001721  # Formula given in RP2040 Datasheet
+        reading = (
+                              self.TEMP_SENSOR.read_u16() * self.adc_conversion_factor) - self.adc_voltage_correction
+        value = self.INTEGRATED_TEMP_CORRECTION - reading / 0.001721
 
         cpu_temp = round(float(value), 1)
         self.current = cpu_temp
 
-        # Estadísticas
+        # Actualiza las estadísticas
         if cpu_temp > self.max:
             self.max = cpu_temp
         if cpu_temp < self.min:
             self.min = cpu_temp
 
-        self.avg_cpu_temp = round(float((self.avg + cpu_temp) / 2), 1)
+        self.num_of_measurements += 1
+        self.sum_of_temps += cpu_temp
+        self.avg = round(self.sum_of_temps / self.num_of_measurements, 1)
 
-        return round(float(cpu_temp), 1)
+        return cpu_temp
 
-    def getTemp(self):
-        cpu_temp = self.readSensorTemp()
+    def get_temp (self):
+        """
+        Obtiene la temperatura actual.
 
-        return round(float(cpu_temp), 1)
+        Returns:
+            float: Temperatura actual.
+        """
+        return self.read_sensor_temp()
 
-    def ledOn(self):
+    def led_on (self):
+        """
+        Enciende el LED integrado.
+        """
         self.LED_INTEGRATED.on()
 
-    def ledOff(self):
+    def led_off (self):
+        """
+        Apaga el LED integrado.
+        """
         self.LED_INTEGRATED.off()
 
-    def getStats(self):
-        """ Get Statistics formated as a dictionary"""
+    def get_temp_stats (self):
+        """
+        Obtiene las estadísticas actuales de temperatura.
 
+        Returns:
+            dict: Contiene la temperatura máxima, mínima, promedio y actual.
+        """
         return {
-            'max': round(float(self.max), 1),
-            'min': round(float(self.min), 1),
-            'avg': round(float(self.avg), 1),
-            'current': round(float(self.current), 1)
+            'max': self.max,
+            'min': self.min,
+            'avg': self.avg,
+            'current': self.current
         }
 
-    def wifiStatus(self):
-        """ Get wifi status"""
-        return self.wifi.status() if self.wifi else 0
+    def wifi_status (self):
+        """
+        Obtiene el estado de la conexión Wi-Fi.
 
-    def wifiIsConnected(self):
-        """ Get wifi is connected """
-        return bool(self.wifi and self.wifi.isconnected and self.wifi.status() == 3)
+        Returns:
+            int: Constante que indica el estado de la conexión Wi-Fi.
+        """
+        return self.wifi.status() if self.wifi else WIFI_DISCONNECTED
 
-    def wifiDebug(self):
-        print('Conectado a wifi:', self.wifiIsConnected())
-        print('Wifi Status:', self.wifiStatus())
-        print('Wifi IP:', self.wifi.ifconfig())
-        print('Canal: ', self.wifi.config('channel'))
+    def wifi_is_connected (self):
+        """
+        Comprueba si el Wi-Fi está conectado.
+
+        Returns:
+            bool: True si está conectado, False en caso contrario.
+        """
+        return bool(
+            self.wifi and self.wifi.isconnected() and self.wifi.status() == WIFI_CONNECTED)
+
+    def wifi_debug (self):
+        """
+        Muestra información de debug de la conexión Wi-Fi.
+        """
+        print('Conectado a wifi:', self.wifi_is_connected())
+        print('Estado del wi-fi:', self.wifi_status())
+        print('Dirección IP Wi-fi:', self.wifi.ifconfig())
+        print('Canal de Wi-fi: ', self.wifi.config('channel'))
         print('ESSID: ', self.wifi.config('essid'))
-        print('TXPOWER:', self.wifi.config('txpower'))
+        print('Potencia de transmisión (TXPOWER):', self.wifi.config('txpower'))
+        print('Hostname:', self.wifi.config('hostname'))
 
         import ubinascii
         import network
 
+        # Convierte la dirección MAC a formato legible
         mac = ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
-        print(mac)
+        print('Dirección MAC: ', mac)
 
-    def wifiConnect(self, ssid = None, password = None):
-        """ Connect to wifi"""
+    def wifi_connect (self, ssid=None, password=None):
+        """
+        Intenta conectar a Wi-Fi con las credenciales dadas.
 
+        Args:
+            ssid (str): ID de red para la conexión Wi-Fi. Por defecto None.
+            password (str): Contraseña para la conexión Wi-Fi. Por defecto None.
+
+        Returns:
+            bool: True si consigue conectarse, False en caso contrario.
+        """
         if ssid is None and self.SSID is None and self.PASSWORD is None and password is None:
             if self.DEBUG:
-                print('No se ha definido credenciales para conectar a wifi')
+                print('No se definieron las credenciales de wi-fi')
+
             return False
 
         self.wifi = network.WLAN(network.STA_IF)
         self.wifi.active(True)
 
-        # Desactivo el ahorro de energía.
-        self.wifi.config(pm = 0xa11140)
+        # Establece el nombre del host
+        network.hostname(self.hostname)
 
-        #self.wifi.config(txpower=20, channel=2, ssid=ssid, security=4, password=password)
+        # Desactiva el ahorro de energía
+        self.wifi.config(pm=0xa11140)
 
         self.wifi.connect(ssid, password)
-
         sleep(1)
 
-        tryConnections = 3
+        try_connections = 3
 
-        while self.wifiIsConnected() == False and tryConnections > 0:
-            tryConnections -= 1
-
+        while not self.wifi_is_connected() and try_connections > 0:
+            try_connections -= 1
             sleep(3)
-
             self.wifi.connect(ssid, password)
 
-        if (self.DEBUG):
-            while self.wifiIsConnected() == False:
-                print('')
-
+        if self.DEBUG:
+            while not self.wifi_is_connected():
                 sleep(3)
-
                 self.wifi.connect(ssid, password)
-
                 sleep(1)
+                print("Esperando para conectarse:")
+                self.wifi_debug()
 
-                print("Waiting to connect:")
-                self.wifiDebug()
-                print('SSID: ', ssid)
+        return self.wifi_is_connected()
 
-                sleep(3)
-
-                print(self.wifi.scan())
-                sleep(3)
-
-
-            print('')
-            sleep(1)
-
-            print("Waiting to connect:")
-            self.wifiDebug()
-            print('SSID: ', ssid)
-
-            sleep(3)
-
-            print(self.wifi.scan())
-            sleep(3)
-
-        return self.wifiIsConnected()
-
-    def wifiDisconnect(self):
-        """ Disconnect from wifi"""
+    def wifi_disconnect (self):
+        """
+        Desconecta el wi-fi.
+        """
         self.wifi.disconnect()
 
-    def readAnalogInput(self, pin):
+    def read_analog_input (self, pin):
         """
-        Read analog value from pin
-        Lectura del ADC a 16 bits (12bits en raspberry pi pico, traducido a 16bits)
-        """
+        Lee una entrada analógica.
 
+        Args:
+            pin (int): Número del pin del que leer.
+
+        Returns:
+            float: Lectura analógica.
+        """
         reading = ADC(pin).read_u16()
 
-        #print("Lectura pin :" + str(pin))
-
-        #readingParse = ((reading - self.adc_voltage_correction)
-        #                * self.adc_conversion_factor)
-        #print("Lectura pin :" + str(pin),
-        #      (reading / 65535) * self.voltage_working)
-
-        #print("Lectura parseada: " + str(readingParse))
-
-        #print("raw: " + str(reading))
-        #print("adc_voltage_correction: " + str(self.adc_voltage_correction))
-
-        #print("voltaje: " + str(self.voltage_working -
-        #                        ((reading / 65535) * self.voltage_working)))
-
         return self.voltage_working - ((reading / 65535) * self.voltage_working)
-        # return (reading / 65535) * self.voltage_working

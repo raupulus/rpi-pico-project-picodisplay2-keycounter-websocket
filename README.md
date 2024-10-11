@@ -27,7 +27,8 @@ Puedes descargar mi diseño para **Pico Display 2.0** desde el siguiente enlace:
 
 ## Preparar proyecto
 
-Antes de comenzar, hay que copiar el archivo **.env.example.py** a **.env** y rellenar las variables con los datos del wireless y de acceso a la API.
+Antes de comenzar, hay que copiar el archivo **.env.example.py** a **env.py** 
+y rellenar las variables con los datos del wireless y de acceso a la API.
 
 Una vez preparado, subir a la raspberry todo el contenido del directorio **src**
 
