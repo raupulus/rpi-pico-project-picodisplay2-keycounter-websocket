@@ -5,6 +5,8 @@ from Models.Api import Api
 from Models.RpiPico import RpiPico
 from Models.PicoDisplay2 import PicoDisplay2
 from Models.WebSocketServer import WebSocketServer
+from Models.Computer import Computer
+import utime
 
 # Importo variables de entorno
 import env
@@ -18,7 +20,7 @@ controller = RpiPico(ssid=env.AP_NAME, password=env.AP_PASS, debug=env.DEBUG,
 #controller = RpiPico(debug=env.DEBUG)
 
 # Display Model
-display = PicoDisplay2(controller=controller)
+display = PicoDisplay2(controller=controller, debug=env.DEBUG)
 
 sleep_ms(20)
 
@@ -34,12 +36,69 @@ thread_lock_acquired = False
 
 sleep_ms(20)
 
-# Websocket Server
-websocket_server = WebSocketServer()
+
 
 #gc.collect()
 
-def thread0():
+
+sleep_ms(3000)
+
+
+devices = []
+
+
+def find_device_by_id (device_id):
+    current_time = utime.time()  # time in seconds since the Epoch
+    ten_minutes_ago = current_time - 600  # 600 seconds is 10 minutes
+
+    current_device = None
+    device_position = None
+
+    # Iterate over a copy of the device list
+    for index, device in enumerate(devices.copy()):
+        device_last_seen_unix = utime.mktime(device.last_seen)
+
+        if device.device_id == device_id:
+            current_device = device
+            device_position = index  # store the current position
+        elif device_last_seen_unix < ten_minutes_ago:
+            devices.remove(device)
+
+    return device_position, current_device
+
+
+def thread1 (data):
+    """
+    Segundo hilo para acciones secundarias.
+
+    TODO: plantear si poner en este hilo bucle para botones y apagar pantalla
+    """
+    global thread_lock_acquired
+
+    if not thread_lock_acquired:
+        thread_lock_acquired = True
+
+        print('')
+        print('Datos a procesar:', data)
+
+        device_id = data['device_id']
+        pos, device = find_device_by_id(device_id)
+
+        if device is None:
+            device = Computer(data)
+            devices.append(device)
+        else:
+            device.update(data)
+
+        print('devices:', devices)
+        print('device:', device)
+
+        display.update(pos, device)
+
+        thread_lock_acquired = False
+        gc.collect()
+
+def thread0 ():
     """
     Primer hilo para lecturas y envío de datos a las acciones del segundo hilo.
     """
@@ -50,16 +109,22 @@ def thread0():
 
     print(devices_info)
 
+    # Iniciamos el servidor WebSocket en un nuevo hilo
+    websocket_server = WebSocketServer(thread1)
+
     websocket_server.start()
+    #_thread.start_new_thread(websocket_server.start, ())
 
-def thread1():
-    """
-    Segundo hilo para acciones secundarias.
-    """
-    pass
 
+
+
+
+
+
+#_thread.start_new_thread(display.debug_balls, ())
 
 thread0()
+
 
 """
 while True:

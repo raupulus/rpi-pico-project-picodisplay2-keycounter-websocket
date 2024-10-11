@@ -218,6 +218,10 @@ class RpiPico:
                 print("Esperando para conectarse:")
                 self.wifi_debug()
 
+
+        if self.DEBUG:
+            self.wifi_debug()
+
         return self.wifi_is_connected()
 
     def wifi_disconnect (self):

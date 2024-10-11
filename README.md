@@ -44,3 +44,7 @@ Para poder utilizar la pantalla necesitamos instalar el firmware de micropython 
 
 
 En el momento de crear el proyecto está la versión 1.23.0 (https://github.com/pimoroni/pimoroni-pico/releases/download/v1.23.0-1/picow-v1.23.0-1-pimoroni-micropython.uf2)
+
+
+## Instalar dependencias
+
