@@ -14,6 +14,7 @@ def client (ip='172.18.1.209', port=80):
             'pulsation_average': 257
         },
         'timestamp': 'N/D',
+        'time': 'N/D',
         'system': {
             'so': 'Debian Testing',
         }
@@ -25,10 +26,11 @@ def client (ip='172.18.1.209', port=80):
             'pulsations_total': 3121
         },
         'streak': {
-            'pulsations_current': 423,
+            'pulsations_current': 9999,
             'pulsation_average': 115
         },
         'timestamp': 'N/D',
+        'time': 'N/D',
         'system': {
             'so': 'Macos 15',
         }
@@ -40,6 +42,13 @@ def client (ip='172.18.1.209', port=80):
 
     datas1['timestamp'] = datetime.datetime.now(datetime.timezone.utc).strftime(
         '%Y-%m-%d %H:%M:%S')
+
+    # Añadir la hora al diccionario
+    datas['time'] = datetime.datetime.now().strftime(
+        '%H:%M:%S')
+
+    datas1['time'] = datetime.datetime.now().strftime(
+        '%H:%M:%S')
 
     # Convertir el diccionario a una cadena JSON
     data_string = json.dumps(datas)

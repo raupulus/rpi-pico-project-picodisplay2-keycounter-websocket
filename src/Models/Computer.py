@@ -9,6 +9,7 @@ class Computer:
         self.session = None
         self.streak = None
         self.timestamp = None
+        self.time = None
         self.system = None
         self.counter = 0
         self.update(data)
@@ -19,6 +20,7 @@ class Computer:
         self.session = data.get('session', self.session)
         self.streak = data.get('streak', self.streak)
         self.timestamp = data.get('timestamp', self.timestamp)
+        self.time = data.get('time', self.time)
         self.system = data.get('system', self.system)
         self.last_seen = utime.localtime()
 

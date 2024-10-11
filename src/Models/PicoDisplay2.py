@@ -28,7 +28,7 @@ class PicoDisplay2:
         self.CYAN = self.display.create_pen(0, 255, 255)
         self.MAGENTA = self.display.create_pen(255, 0, 255)
         self.YELLOW = self.display.create_pen(255, 216, 0)
-        self.GREEN = self.display.create_pen(0, 121, 64)
+        self.GREEN = self.display.create_pen(0, 145, 77)
         self.RED = self.display.create_pen(209, 34, 41)
         self.ORANGE = self.display.create_pen(246, 138, 30)
         self.INDIGO = self.display.create_pen(36, 64, 142)
@@ -44,14 +44,40 @@ class PicoDisplay2:
     def initialize(self):
         self.led.set_rgb(0, 0, 200)
         self.display.set_backlight(1.0)
-        self.display.set_font("bitmap8")
+        self.display.set_font("bitmap6")
         self.display.set_pen(self.BLACK)
         self.display.clear()
-        self.display.text("Inicializando...", 70, 100)
+        self.create_frame()
+
+    def create_frame (self):
+        # Grosor del trazo para el marco
+        border_thickness = 3
+
+        # Set pen to yellow and draw a horizontal line in the middle of the screen
+        self.display.set_pen(self.YELLOW)
+        self.display.line(0, self.HEIGHT // 2, self.WIDTH, self.HEIGHT // 2)
+
+        # Set pen to blue
+        self.display.set_pen(self.BLUE)
+
+        # Draw blue border (clockwise)
+        self.display.line(border_thickness, border_thickness,
+                          self.WIDTH - border_thickness,
+                          border_thickness)  # Top border
+        self.display.line(self.WIDTH - border_thickness, border_thickness,
+                          self.WIDTH - border_thickness,
+                          self.HEIGHT - border_thickness)  # Right border
+        self.display.line(border_thickness, self.HEIGHT - border_thickness,
+                          self.WIDTH - border_thickness,
+                          self.HEIGHT - border_thickness)  # Bottom border
+        self.display.line(border_thickness, border_thickness, border_thickness,
+                          self.HEIGHT - border_thickness)  # Left border
+
+
+
+        # Show changes on the display
         self.display.update()
 
-    # a handy function we can call to clear the screen
-    # display.set_pen(15) is white and display.set_pen(0) is black
     def clear(self):
         if self.DEBUG:
             print("Clearing Pico Display")
@@ -69,39 +95,66 @@ class PicoDisplay2:
 
         self.display.set_pen(self.BLACK)
 
-        start_y = 0 if position == 0 else self.HEIGHT // 2
-        height = self.HEIGHT // 2
+        border_thickness = 3
+        clear_height = (self.HEIGHT // 2) - (2 * border_thickness)
+        start_y = 2 * border_thickness if position == 0 else self.HEIGHT // 2 + border_thickness
+        start_x = border_thickness * 2
+        clear_width = self.WIDTH - start_x - border_thickness
 
-        # Clear only half of the screen
-        self.display.rectangle(0, start_y, self.WIDTH, height)
+        # Clear only half of the screen, preserving border and line.
+        self.display.rectangle(start_x, start_y, clear_width, clear_height)
 
-        self.display.set_pen(self.GREEN)
-
-        # Información del Sistema
         system_data = device.system
-        self.display.text(f"OS: {system_data['so'] if system_data else 'N/A'}",
-                          10,
-                          start_y + 10)
-
-        # Racha actual
         streak_data = device.streak
-        self.display.text(
-            f"Strike: {streak_data['pulsations_current'] if streak_data else 'N/A'}",
-            10, start_y + 30)
-
-        # Media de pulsaciones
-        self.display.text(
-            f"AVG: {streak_data['pulsation_average'] if streak_data else 'N/A'}",
-            10, start_y + 50)
-
-        # Total de la sesión
         session_data = device.session
-        self.display.text(
-            f"Total: {session_data['pulsations_total'] if session_data else 'N/A'}",
-            10, start_y + 70)
 
-        self.display.text(f"Actualizado: {device.timestamp}", 10,
-                          start_y + 90)
+        self.display.set_font("bitmap16")
+
+
+        offset_text = start_y + 6
+        self.display.set_pen(self.GREEN)  # set pen color to green for title
+        self.display.text(f"OS:", 10 + border_thickness, offset_text)
+
+        self.display.set_pen(self.RED)  # set pen color to red for value
+        self.display.text(f"{system_data['so'] if system_data else 'N/A'}",
+                          50 + border_thickness, offset_text)
+
+
+        offset_text += 28
+        self.display.set_pen(self.GREEN)
+        self.display.text(f"AVG:", 10 + border_thickness, offset_text, scale=3)
+
+        self.display.set_pen(self.MAGENTA)
+        self.display.text(
+            f"{streak_data['pulsation_average'] if streak_data else 'N/A'}",
+            76 + border_thickness, offset_text, scale=3)
+
+        offset_text += 22
+        self.display.set_pen(self.GREEN)
+        self.display.text(f"ALL:", 10 + border_thickness, offset_text, scale=3)
+
+        self.display.set_pen(self.RED)
+        self.display.text(
+            f"{session_data['pulsations_total'] if session_data else 'N/A'}",
+            76 + border_thickness, offset_text, scale=3)
+
+        offset_text += 28
+
+        self.display.set_font("bitmap14_outline")
+
+        self.display.set_pen(self.ORANGE)
+        self.display.text(f"{device.time}", 105 + border_thickness,
+                          offset_text, scale=2)
+
+        self.display.set_font("bitmap16")
+
+        self.display.set_pen(self.YELLOW)
+        self.display.text(
+            f"{streak_data['pulsations_current'] if streak_data else 'N/A'}",
+            self.WIDTH - 132 - border_thickness * 2,
+            start_y + ((clear_height - 70) // 2), scale=4)
+
+        self.display.set_font("bitmap6")
 
         self.display.update()
 
