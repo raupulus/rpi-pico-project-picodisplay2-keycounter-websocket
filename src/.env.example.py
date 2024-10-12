@@ -2,6 +2,10 @@
 AP_NAME = ""
 AP_PASS = ""
 
+ALTERNATIVES_AP = [
+    #{"ssid": "", "password": ""},
+]
+
 # Datos para la API
 API_URL = "http://localhost:8000/api/v1"
 API_PATH = "ink/resume"
