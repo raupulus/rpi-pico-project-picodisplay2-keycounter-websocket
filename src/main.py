@@ -16,6 +16,7 @@ gc.enable()
 
 # Rpi Pico Model
 controller = RpiPico(ssid=env.AP_NAME, password=env.AP_PASS, debug=env.DEBUG,
+                     alternatives_ap=env.ALTERNATIVES_AP,
                      hostname="Raupulus KeyCounter")
 #controller = RpiPico(debug=env.DEBUG)
 

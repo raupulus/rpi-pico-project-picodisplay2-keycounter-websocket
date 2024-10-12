@@ -38,5 +38,5 @@ class Api():
         except Exception as e:
             if self.DEBUG:
                 print("Error al obtener los datos de la api: ", e)
-            return { }
+            return {}
 

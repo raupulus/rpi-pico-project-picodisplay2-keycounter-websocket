@@ -27,6 +27,7 @@ class RpiPico:
     hostname = 'Rpi-Pico-W'
 
     def __init__ (self, ssid=None, password=None, debug=False, country="ES",
+                  alternatives_ap=None,
                   hostname="Rpi-Pico-W"):
         """
         Constructor de la clase RpiPico.
@@ -35,6 +36,7 @@ class RpiPico:
             ssid (str): ID de red para la conexión Wi-Fi. Por defecto None.
             password (str): Contraseña para la conexión Wi-Fi. Por defecto None.
             debug (bool): Indica si se muestran los mensajes de debug. Por defecto False.
+            alternatives_ap (tuple): Puedes pasar una tupla con redes adicionales.
             country (str): Código del país. Por defecto 'ES'.
         """
         self.DEBUG = debug
@@ -42,6 +44,7 @@ class RpiPico:
         self.PASSWORD = password
         self.COUNTRY = country
         self.hostname = hostname
+        self.alternatives_ap = alternatives_ap
 
         self.TEMP_SENSOR = ADC(4)  # Sensor interno de Raspberry Pi Pico.
 
@@ -179,17 +182,14 @@ class RpiPico:
         Intenta conectar a Wi-Fi con las credenciales dadas.
 
         Args:
-            ssid (str): ID de red para la conexión Wi-Fi. Por defecto None.
-            password (str): Contraseña para la conexión Wi-Fi. Por defecto None.
+            ssid (str): ID de red para la conexión Wi-Fi.
+            password (str): Contraseña para la conexión Wi-Fi.
 
-        Returns:
-            bool: True si consigue conectarse, False en caso contrario.
+        Retorno:
+            bool: True si se logra conectarse, False en caso contrario.
         """
-        if ssid is None and self.SSID is None and self.PASSWORD is None and password is None:
-            if self.DEBUG:
-                print('No se definieron las credenciales de wi-fi')
-
-            return False
+        if ssid is None and password is None:
+            ssid, password = self.SSID, self.PASSWORD
 
         self.wifi = network.WLAN(network.STA_IF)
         self.wifi.active(True)
@@ -200,29 +200,26 @@ class RpiPico:
         # Desactiva el ahorro de energía
         self.wifi.config(pm=0xa11140)
 
-        self.wifi.connect(ssid, password)
-        sleep(1)
+        while not self.wifi_is_connected():
+            # Escaneamos las redes disponibles
+            available_ssids = self.wifi.scan()
+            available_ssids = [ap[0].decode('utf-8') for ap in available_ssids]
 
-        try_connections = 3
-
-        while not self.wifi_is_connected() and try_connections > 0:
-            try_connections -= 1
-            sleep(3)
-            self.wifi.connect(ssid, password)
-
-        if self.DEBUG:
-            while not self.wifi_is_connected():
-                sleep(3)
-                self.wifi.connect(ssid, password)
-                sleep(1)
-                print("Esperando para conectarse:")
-                self.wifi_debug()
-
-
-        if self.DEBUG:
-            self.wifi_debug()
-
-        return self.wifi_is_connected()
+            # Si la red principal se encuentra disponible, intenta conectar a ella
+            if self.SSID in available_ssids:
+                self.wifi.connect(self.SSID, self.PASSWORD)
+            else:
+                # Si no esta la red principal, intenta conectar a las redes secundarias disponibles
+                for ap in self.alternatives_ap:
+                    if ap['ssid'] in available_ssids:
+                        self.wifi.connect(ap['ssid'], ap['password'])
+            sleep(1)
+            # Verificar y mostrar información de conexión si se encuentra conectado
+            if self.wifi_is_connected():
+                if self.DEBUG:
+                    self.wifi_debug()
+                return True
+        return False
 
     def wifi_disconnect (self):
         """
