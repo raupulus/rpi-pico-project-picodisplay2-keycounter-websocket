@@ -87,7 +87,7 @@ class PicoDisplay2:
         self.display.clear()
         self.display.update()
 
-    def update (self, position, device):
+    def update (self, position, device, showbar = False):
         self.led.set_rgb(200, 0, 0)
 
         if self.DEBUG:
@@ -158,7 +158,73 @@ class PicoDisplay2:
 
         self.display.update()
 
+        if showbar:
+            self.showbar(device.avg_collection)
+
         self.led.set_rgb(0, 200, 0)
+
+    def showbar (self, avg_collection):
+        if not avg_collection:  # Si la colección está vacía.
+            return
+
+        self.display.set_pen(self.BLACK)  # color para limpiar la pantalla
+        # Conservamos un margen de 3px tanto en el borde derecho como en el inferior
+        self.display.rectangle(6, self.HEIGHT // 2 + 3, self.WIDTH - 9,
+                               self.HEIGHT // 2 - 9)
+
+        # Dibujar la línea horizontal central.
+        self.display.set_pen(self.YELLOW)
+        self.display.rectangle(0, self.HEIGHT // 2, self.WIDTH,
+                               2)  # la línea tiene 2 pixeles de alto
+
+        # Espaciamos las barras 3 pixeles y restamos la cantidad total de espacios entre las barras del ancho total.
+        bar_width = (self.WIDTH - 12 - (len(avg_collection) * 3)) // len(
+            avg_collection)
+        max_value = max(avg_collection)
+
+        prev_height = None
+        for i, value in enumerate(avg_collection):
+            # Restamos 10 píxeles de altura (ya estabas restando 6, ahora solamente añades 4 más).
+            bar_height = (value / max_value) * ((self.HEIGHT // 2) - 10)
+            bar_height = int(bar_height) if bar_height > 0 else 0
+
+            # Elige el color de la barra en función del valor
+            if value < 100:
+                self.display.set_pen(self.BLUE)
+            elif 150 <= value <= 250:
+                self.display.set_pen(self.ORANGE)
+            else:
+                self.display.set_pen(self.RED)
+
+            # Dibujar la barra
+            self.display.rectangle((i * (bar_width + 3)) + 6,
+                                   self.HEIGHT - bar_height - 6, bar_width,
+                                   bar_height)
+
+            # Dibuja un círculo en el pico
+            self.display.set_pen(self.INDIGO)
+            self.display.circle((i * (bar_width + 3)) + 6 + bar_width // 2,
+                                self.HEIGHT - bar_height - 6,
+                                2)  # radio de 2 para el círculo
+
+            # Dibujar una línea encima de las barras con la misma restricción de altura que las barras
+            self.display.set_pen(self.YELLOW)
+            if prev_height is not None:
+                start_height = self.HEIGHT - prev_height - 6
+                end_height = self.HEIGHT - bar_height - 6
+                mid_height = (start_height + end_height) // 2
+                mid_x = ((i - 1) * (bar_width + 3)) + 6 + bar_width // 2
+
+                # Dibuja una línea desde la posición previa a la mitad de la barra actual
+                self.display.line(mid_x, start_height, mid_x, mid_height)
+                # Dibuja una línea desde el centro de la barra hasta la posición actual
+                self.display.line(mid_x, mid_height,
+                                  (i * (bar_width + 3)) + 6 + bar_width // 2,
+                                  end_height)
+
+            prev_height = bar_height
+
+        self.display.update()
 
     def debug_balls(self):
 

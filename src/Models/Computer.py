@@ -30,7 +30,7 @@ class Computer:
         if self.streak and 'pulsation_average' in self.streak:
             self.avg_collection.append(self.streak['pulsation_average'])
 
-            if len(self.avg_collection) > 10:  # If there are more than 10 elements
+            if len(self.avg_collection) > 30:  # If there are more than 10  elements
                 self.avg_collection.pop(0)  # Remove the first element
 
         if self.counter >= 100000:

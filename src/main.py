@@ -49,7 +49,7 @@ devices = []
 
 def find_device_by_id (device_id):
     current_time = utime.time()  # time in seconds since the Epoch
-    ten_minutes_ago = current_time - 600  # 600 seconds is 10 minutes
+    ten_minutes_ago = current_time - 300  # 300 seconds is 5 minutes
 
     current_device = None
     device_position = None
@@ -67,10 +67,35 @@ def find_device_by_id (device_id):
     return device_position, current_device
 
 
+def updateDisplay(data):
+    global thread_lock_acquired
+
+    try:
+        device_id = data['device_id']
+        pos, device = find_device_by_id(device_id)
+
+        if device is None:
+            device = Computer(data)
+            devices.append(device)
+        else:
+            device.update(data)
+
+        if env.DEBUG:
+            print('devices:', devices)
+            print('device:', device)
+
+        display.update(pos, device, True if len(devices) is 1 else False)
+    except Exception as e:
+        if env.DEBUG:
+            print('Error in updateDisplay function:', e)
+    finally:
+        thread_lock_acquired = False
+        gc.collect()
+
+
 def thread1 (data):
     """
     Segundo hilo para acciones secundarias.
-
     TODO: plantear si poner en este hilo bucle para botones y apagar pantalla
     """
     global thread_lock_acquired
@@ -78,8 +103,12 @@ def thread1 (data):
     if not thread_lock_acquired:
         thread_lock_acquired = True
 
-        print('')
-        print('Datos a procesar:', data)
+        if env.DEBUG:
+            print('')
+            print('Datos a procesar:', data)
+
+        # Iniciar un nuevo hilo que llama a updateDisplay(data)
+        #_thread.start_new_thread(updateDisplay, (data))
 
         device_id = data['device_id']
         pos, device = find_device_by_id(device_id)
@@ -90,13 +119,15 @@ def thread1 (data):
         else:
             device.update(data)
 
-        print('devices:', devices)
-        print('device:', device)
+        if env.DEBUG:
+            print('devices:', devices)
+            print('device:', device)
 
-        display.update(pos, device)
+        display.update(pos, device, True if len(devices) is 1 else False)
 
         thread_lock_acquired = False
         gc.collect()
+
 
 def thread0 ():
     """

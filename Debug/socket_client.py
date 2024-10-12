@@ -1,17 +1,18 @@
 import socket
 import json
 import datetime
+import random
 
 
 def client (ip='172.18.1.209', port=80):
     datas = {  # Definir mensaje por defecto
         'device_id': 3,
         'session': {
-            'pulsations_total': 7931
+            'pulsations_total': random.randint(6000, 30000)
         },
         'streak': {
-            'pulsations_current': 122,
-            'pulsation_average': 257
+            'pulsations_current': random.randint(140, 1200),
+            'pulsation_average': random.randint(1, 400)
         },
         'timestamp': 'N/D',
         'time': 'N/D',
@@ -66,7 +67,8 @@ def client (ip='172.18.1.209', port=80):
         data = s.recv(1024)
         print('Datos recibidos:', data)
 
-    # Creamos el socket
+    """
+    # Creamos el socket 2
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # Nos conectamos al servidor
         s.connect((ip, port))
@@ -77,6 +79,6 @@ def client (ip='172.18.1.209', port=80):
         # Recibimos la respuesta
         data1 = s.recv(1024)
         print('Datos recibidos:', data1)
-
+    """
 
 client()
