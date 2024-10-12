@@ -11,7 +11,7 @@ API_TOKEN = "apitoken"
 DEVICE_ID = 1
 
 # Configuración de la pantalla.
-TIME_TO_REFRESH = 10 # Minutos para apagar la pantalla automáticamente
+TIME_TO_DISPLAY_OFF = 10 # Minutos para apagar la pantalla automáticamente
 
 # Indica si está en modo debug la aplicación
 DEBUG = False

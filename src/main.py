@@ -34,16 +34,12 @@ sleep_ms(20)
 thread_lock = _thread.allocate_lock()
 thread_lock_acquired = False
 
-sleep_ms(20)
-
-
-
-#gc.collect()
-
-
 sleep_ms(3000)
 
+# Timer para apagar la pantalla
+last_conn_time = utime.ticks_ms()
 
+# Listado de dispositivos recientes
 devices = []
 
 
@@ -69,24 +65,31 @@ def find_device_by_id (device_id):
 
 def updateDisplay(pos, device):
     thread_lock.acquire()
-    global thread_lock_acquired
+    global thread_lock_acquired, last_conn_time
 
     try:
         display.update(pos, device, True if len(devices) is 1 else False)
+        last_conn_time = utime.ticks_ms()
 
     except Exception as e:
         if env.DEBUG:
             print('Error in updateDisplay function:', e)
     finally:
-        #gc.collect()
         thread_lock.release()
         thread_lock_acquired = False
 
+    while not thread_lock_acquired and display.on:
+        # Apagar la pantalla automáticamente
+        diff = utime.ticks_diff(utime.ticks_ms(), last_conn_time)
+        if diff > env.TIME_TO_DISPLAY_OFF * 60 * 1000:
+            if env.DEBUG:
+                print('Apagando pantalla')
+
+            display.shutdown()
 
 def thread1 (data):
     """
     Segundo hilo para acciones secundarias.
-    TODO: plantear si poner en este hilo bucle para botones y apagar pantalla
     """
     global thread_lock_acquired
 
@@ -115,15 +118,6 @@ def thread1 (data):
         # Iniciar un nuevo hilo que llama a updateDisplay(data)
         _thread.start_new_thread(updateDisplay, (pos, device))
 
-
-def display_control():
-    """
-    TODO: Poner aquí control de menú y de apagar pantalla. ¿Llamar desde
-    websocket_server.start()?? creo que no funcionará mientras espera
-    :return:
-    """
-    pass
-
 def thread0 ():
     """
     Primer hilo para lecturas y envío de datos a las acciones del segundo hilo.
@@ -139,23 +133,11 @@ def thread0 ():
     websocket_server = WebSocketServer(thread1)
 
     websocket_server.start()
-    #_thread.start_new_thread(websocket_server.start, ())
 
-
-
-
-
-
-
-#_thread.start_new_thread(display.debug_balls, ())
-
-thread0()
-
-
-"""
 while True:
     try:
         thread0()
+        # _thread.start_new_thread(display.debug_balls, ())
     except Exception as e:
         if env.DEBUG:
             print('Error: ', e)
@@ -169,4 +151,3 @@ while True:
             print("Memoria después de liberar:", gc.mem_free())
 
         sleep(5)
-"""

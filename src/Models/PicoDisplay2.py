@@ -21,6 +21,8 @@ class PicoDisplay2:
         self.display = PicoGraphics(display=DISPLAY_PICO_DISPLAY_2,
                                    pen_type=PEN_P8)
 
+        self.on = True
+
         self.WIDTH, self.HEIGHT = self.display.get_bounds()
 
         self.WHITE = self.display.create_pen(255, 255, 255)
@@ -48,6 +50,11 @@ class PicoDisplay2:
         self.display.set_pen(self.BLACK)
         self.display.clear()
         self.create_frame()
+
+    def shutdown(self):
+        self.led.set_rgb(0, 0, 0)
+        #self.display.clear()
+        self.display.set_backlight(0.1)
 
     def create_frame (self):
         # Grosor del trazo para el marco
@@ -88,6 +95,7 @@ class PicoDisplay2:
         self.display.update()
 
     def update (self, position, device, showbar = False):
+        self.display.set_backlight(1.0)
         self.led.set_rgb(200, 0, 0)
 
         if self.DEBUG:
