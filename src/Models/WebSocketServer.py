@@ -38,8 +38,8 @@ class WebSocketServer:
 
                     if "device_id" in data_dict:
                         self.callback(data_dict)
-                except Exception as ex:
-                    print("Error en el manejo de datos: ", ex)
+                except Exception as e:
+                    print("Error en el manejo de datos: ", e)
 
             else:
                 conn.close()

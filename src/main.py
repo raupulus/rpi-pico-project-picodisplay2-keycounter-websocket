@@ -67,30 +67,20 @@ def find_device_by_id (device_id):
     return device_position, current_device
 
 
-def updateDisplay(data):
+def updateDisplay(pos, device):
+    thread_lock.acquire()
     global thread_lock_acquired
 
     try:
-        device_id = data['device_id']
-        pos, device = find_device_by_id(device_id)
-
-        if device is None:
-            device = Computer(data)
-            devices.append(device)
-        else:
-            device.update(data)
-
-        if env.DEBUG:
-            print('devices:', devices)
-            print('device:', device)
-
         display.update(pos, device, True if len(devices) is 1 else False)
+
     except Exception as e:
         if env.DEBUG:
             print('Error in updateDisplay function:', e)
     finally:
+        #gc.collect()
+        thread_lock.release()
         thread_lock_acquired = False
-        gc.collect()
 
 
 def thread1 (data):
@@ -107,9 +97,6 @@ def thread1 (data):
             print('')
             print('Datos a procesar:', data)
 
-        # Iniciar un nuevo hilo que llama a updateDisplay(data)
-        #_thread.start_new_thread(updateDisplay, (data))
-
         device_id = data['device_id']
         pos, device = find_device_by_id(device_id)
 
@@ -123,11 +110,19 @@ def thread1 (data):
             print('devices:', devices)
             print('device:', device)
 
-        display.update(pos, device, True if len(devices) is 1 else False)
+        #display.update(pos, device, True if len(devices) is 1 else False)
 
-        thread_lock_acquired = False
-        gc.collect()
+        # Iniciar un nuevo hilo que llama a updateDisplay(data)
+        _thread.start_new_thread(updateDisplay, (pos, device))
 
+
+def display_control():
+    """
+    TODO: Poner aquí control de menú y de apagar pantalla. ¿Llamar desde
+    websocket_server.start()?? creo que no funcionará mientras espera
+    :return:
+    """
+    pass
 
 def thread0 ():
     """
