@@ -33,10 +33,10 @@ class WebSocketServer:
                     print("Datos recibidos: ", data)
                     data_dict = json.loads(data)
 
-                    response = json.dumps(data_dict)
-                    conn.send(response.encode('utf-8'))
-
                     if "device_id" in data_dict:
+                        response = json.dumps({'status': 'ok'})
+                        conn.send(response.encode('utf-8'))
+
                         self.callback(data_dict)
                 except Exception as e:
                     print("Error en el manejo de datos: ", e)
