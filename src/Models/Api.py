@@ -22,12 +22,21 @@ class Api():
         :return: List of computers retrieved from the API. If an error occurs, an empty dictionary is returned.
         """
         try:
-            response = urequests.get(self.URL + '/' + self.URL_PATH, headers={
-                "Authorization": "Bearer " + self.TOKEN })
-            data = ujson.loads(response.text)
+            ip_address = str(self.CONTROLLER.wifi.ifconfig()[0])
 
+            headers = {
+                "Authorization": "Bearer " + self.TOKEN,
+                "Local-Ip": ip_address,
+                "Device-Id": str(self.DEVICE_ID)
+            }
+
+            response = urequests.get(self.URL + '/' + self.URL_PATH,
+                                     headers=headers)
+
+            data = ujson.loads(response.text)
             return data
         except Exception as e:
             if self.DEBUG:
-                print("Error al obtener los datos: ", e)
+                print("Error al obtener los datos de la api: ", e)
             return { }
+
