@@ -54,7 +54,8 @@ class PicoDisplay2:
     def shutdown(self):
         self.led.set_rgb(0, 0, 0)
         #self.display.clear()
-        self.display.set_backlight(0.1)
+        self.on = False
+        self.display.set_backlight(0.2)
 
     def create_frame (self):
         # Grosor del trazo para el marco
@@ -95,6 +96,7 @@ class PicoDisplay2:
         self.display.update()
 
     def update (self, position, device, showbar = False):
+        self.on = True
         self.display.set_backlight(1.0)
         self.led.set_rgb(200, 0, 0)
 
