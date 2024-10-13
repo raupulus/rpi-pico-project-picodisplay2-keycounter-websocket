@@ -36,9 +36,6 @@ class WebSocketServer:
 
                 while True:
                     try:
-                        if not self.controller.wifi_is_connected():
-                            self.controller.wifi_connect()
-
                         conn, addr = self.s.accept()
 
                         if self.DEBUG:
@@ -46,13 +43,16 @@ class WebSocketServer:
 
                         # Al existir cliente se maneja la conexión
                         self.handle_client(conn)
-                    except:
+                    except Exception as e:
                         if self.DEBUG:
-                            print(
-                                'Error al ejecutar la escucha del servidor en start() dentro del while')
-            except:
+                            print('Error al ejecutar la escucha del servidor en start() dentro del while', e)
+            except Exception as e:
+                #Esto falla...
+                #if not self.controller.wifi_is_connected():
+                #    self.controller.wifi_connect()
+
                 if self.DEBUG:
-                    print('Error al ejecutar la escucha del servidor en start()')
+                    print('Error al ejecutar la escucha del servidor en start()', e)
 
     def handle_client (self, conn) -> None:
         """
@@ -60,11 +60,7 @@ class WebSocketServer:
         """
 
         while True:
-            try:
-                data = conn.recv(1024)
-            except Exception as e:
-                print('Error en handle_client', e)
-                break
+            data = conn.recv(1024)
 
             if data:
                 try:
