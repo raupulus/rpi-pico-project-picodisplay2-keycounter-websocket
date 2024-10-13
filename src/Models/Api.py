@@ -1,15 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-import urequests, gc
+import urequests
 import ujson
-from time import sleep
-
-gc.enable()
 
 
 class Api():
-    def __init__(self, controller, url, path, token, device_id, debug=False):
+    """
+    A class representing an API connection with methods to interact with the endpoint.
+
+    :param controller: The controller object for raspberry pi pico.
+    :param url: The base URL of the API.
+    :param path: The specific path for the API endpoint.
+    :param token: The authentication token for accessing the API.
+    :param device_id: The unique identifier of the device.
+    :param debug: Optional boolean flag for debugging mode.
+    """
+
+    def __init__ (self, controller, url, path, token, device_id, debug=False):
         self.URL = url
         self.TOKEN = token
         self.DEVICE_ID = device_id
@@ -17,9 +25,12 @@ class Api():
         self.CONTROLLER = controller
         self.DEBUG = debug
 
-    def get_computers_list (self):
+    def get_computers_list (self) -> dict:
         """
-        :return: List of computers retrieved from the API. If an error occurs, an empty dictionary is returned.
+        Obtiene de la Api una lista de diccionarios con los dispositivos de
+        tipo computadora para habilitar los que se permiten mostrar por la
+        pantalla.
+        :return: A list of dictionaries containing information about computers retrieved from the API.
         """
         try:
             ip_address = str(self.CONTROLLER.wifi.ifconfig()[0])
@@ -34,9 +45,9 @@ class Api():
                                      headers=headers)
 
             data = ujson.loads(response.text)
+
             return data
         except Exception as e:
             if self.DEBUG:
                 print("Error al obtener los datos de la api: ", e)
-            return {}
-
+            return { }

@@ -4,13 +4,26 @@ import ujson as json
 
 class WebSocketServer:
     def __init__ (self, callback, debug=False, ip='0.0.0.0', port=80):
+        """
+        Constructor para la clase que representa el servidor de websockets
+
+        :param callback: Método a ejecutar cuando recibe datos
+        :param debug: Indica si se activa el modo debug
+        :param ip: Es la ip del servidor
+        :param port: Es el puerto del servidor
+        """
         self.callback = callback
         self.ip = ip
         self.port = port
         self.s = socket.socket()
         self.DEBUG = debug
 
-    def start (self):
+    def start (self) -> None:
+        """
+        Inicializa la escucha del servidor.
+
+        :return: None
+        """
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.ip, self.port))
         self.s.listen(1)
@@ -21,10 +34,14 @@ class WebSocketServer:
             if self.DEBUG:
                 print('Conexión establecida con:', addr)
 
-            # Creamos un nuevo hilo para manejar cada conexión
+            # Al existir cliente se maneja la conexión
             self.handle_client(conn)
 
-    def handle_client (self, conn):
+    def handle_client (self, conn) -> None:
+        """
+        Procesa la recepción de datos.
+        """
+
         while True:
             data = conn.recv(1024)
 
@@ -48,4 +65,5 @@ class WebSocketServer:
 
             else:
                 conn.close()
+
                 break

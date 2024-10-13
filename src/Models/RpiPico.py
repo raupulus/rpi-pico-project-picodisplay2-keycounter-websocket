@@ -30,7 +30,7 @@ class RpiPico:
                   alternatives_ap=None,
                   hostname="Rpi-Pico-W"):
         """
-        Constructor de la clase RpiPico.
+        Constructor de la clase para Raspberry Pi Pico W.
 
         Args:
             ssid (str): ID de red para la conexión Wi-Fi. Por defecto None.
@@ -53,7 +53,8 @@ class RpiPico:
 
         self.adc_conversion_factor = self.voltage_working / 65535  # Factor de conversión de 16 bits
 
-        if ssid and password:  # Si se proporcionan credenciales Wi-Fi, intenta la conexión
+        # Si se proporcionan credenciales del AP intenta la conexión
+        if ssid and password:
             print('Iniciando la conexión inalámbrica')
             self.wifi_connect(ssid, password)
 
@@ -61,7 +62,7 @@ class RpiPico:
 
         self.reset_stats()
 
-    def reset_stats (self, temp=None):
+    def reset_stats (self, temp=None) -> None:
         """
         Reinicia las estadísticas de temperatura.
 
@@ -74,7 +75,7 @@ class RpiPico:
         self.avg = temp
         self.current = temp
 
-    def read_sensor_temp (self):
+    def read_sensor_temp (self) -> float:
         """
         Lee la temperatura actual del sensor.
 
@@ -104,7 +105,7 @@ class RpiPico:
 
         return cpu_temp
 
-    def get_temp (self):
+    def get_temp (self) -> float:
         """
         Obtiene la temperatura actual.
 
@@ -113,19 +114,23 @@ class RpiPico:
         """
         return self.read_sensor_temp()
 
-    def led_on (self):
+    def led_on (self) -> None:
         """
         Enciende el LED integrado.
+
+        :return: None
         """
         self.LED_INTEGRATED.on()
 
-    def led_off (self):
+    def led_off (self) -> None:
         """
         Apaga el LED integrado.
+
+        :return: None
         """
         self.LED_INTEGRATED.off()
 
-    def get_temp_stats (self):
+    def get_temp_stats (self) -> dict:
         """
         Obtiene las estadísticas actuales de temperatura.
 
@@ -139,7 +144,7 @@ class RpiPico:
             'current': self.current
         }
 
-    def wifi_status (self):
+    def wifi_status (self) -> int:
         """
         Obtiene el estado de la conexión Wi-Fi.
 
@@ -148,7 +153,7 @@ class RpiPico:
         """
         return self.wifi.status() if self.wifi else WIFI_DISCONNECTED
 
-    def wifi_is_connected (self):
+    def wifi_is_connected (self) -> bool:
         """
         Comprueba si el Wi-Fi está conectado.
 
@@ -158,7 +163,7 @@ class RpiPico:
         return bool(
             self.wifi and self.wifi.isconnected() and self.wifi.status() == WIFI_CONNECTED)
 
-    def wifi_debug (self):
+    def wifi_debug (self) -> None:
         """
         Muestra información de debug de la conexión Wi-Fi.
         """
@@ -177,7 +182,7 @@ class RpiPico:
         mac = ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
         print('Dirección MAC: ', mac)
 
-    def wifi_connect (self, ssid=None, password=None):
+    def wifi_connect (self, ssid=None, password=None) -> bool:
         """
         Intenta conectar a Wi-Fi con las credenciales dadas.
 
@@ -194,14 +199,14 @@ class RpiPico:
         self.wifi = network.WLAN(network.STA_IF)
         self.wifi.active(True)
 
-        # Establece el nombre del host
+        # Establezco el nombre del host
         network.hostname(self.hostname)
 
-        # Desactiva el ahorro de energía
+        # Desactivo el ahorro de energía
         self.wifi.config(pm=0xa11140)
 
         while not self.wifi_is_connected():
-            # Escaneamos las redes disponibles
+            # Escaneo las redes disponibles
             available_ssids = self.wifi.scan()
             available_ssids = [ap[0].decode('utf-8') for ap in available_ssids]
 
@@ -213,21 +218,25 @@ class RpiPico:
                 for ap in self.alternatives_ap:
                     if ap['ssid'] in available_ssids:
                         self.wifi.connect(ap['ssid'], ap['password'])
+
             sleep(1)
-            # Verificar y mostrar información de conexión si se encuentra conectado
+
             if self.wifi_is_connected():
                 if self.DEBUG:
                     self.wifi_debug()
+
                 return True
         return False
 
-    def wifi_disconnect (self):
+    def wifi_disconnect (self) -> None:
         """
         Desconecta el wi-fi.
+
+        :return: None
         """
         self.wifi.disconnect()
 
-    def read_analog_input (self, pin):
+    def read_analog_input (self, pin) -> float:
         """
         Lee una entrada analógica.
 
