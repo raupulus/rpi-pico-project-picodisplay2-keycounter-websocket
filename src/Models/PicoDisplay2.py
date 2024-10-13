@@ -21,6 +21,9 @@ class PicoDisplay2:
 
     led = RGBLED(6, 7, 8)
 
+    wireless_info_client = None
+    wireless_info_ap = None
+
     def __init__ (self, controller, debug=False) -> None:
         self.DEBUG = debug
         self.controller = controller
@@ -274,6 +277,8 @@ class PicoDisplay2:
 
         self.current_mode = mode
         self.on = True
+        self.clear()
+        self.display.set_backlight(1.0)
 
         if mode == 'A':
             self.mode_a()
@@ -290,9 +295,6 @@ class PicoDisplay2:
 
         :return:
         """
-        self.current_mode = 'A'
-        self.on = True
-        self.clear()
         self.prepare_frame_a()
 
     def mode_b(self):
@@ -301,10 +303,6 @@ class PicoDisplay2:
 
         :return:
         """
-        self.current_mode = 'B'
-        self.on = True
-        self.clear()
-
         self.display.set_pen(self.ORANGE)
         self.display.text("MODO B", 100, 100, scale=3)
         self.display.update()
@@ -315,64 +313,61 @@ class PicoDisplay2:
 
         :return:
         """
-        self.current_mode = 'C'
-        self.on = True
-        self.clear()
-
         self.display.set_pen(self.ORANGE)
         self.display.text("MODO C", 100, 100, scale=3)
         self.display.update()
 
-    def mode_d(self):
-        """
-        Modo D, muestra la información de red.
+    def mode_d (self):
+        if not self.controller.wifi_is_connected():
+            self.controller.wifi_connect()
 
-        :return:
-        """
-        self.current_mode = 'D'
-        self.on = True
-        self.clear()
+        info_client = self.wireless_info_client
+        info_ap = self.wireless_info_ap
 
-        info_client = [
-            {
-                "name": 'Contectado:',
-                "value": 'Si' if self.controller.wifi_is_connected() else 'No',
-            },
-            {
-                "name": 'Hostname:',
-                "value": self.controller.get_wireless_hostname(),
-            },
-            {
-                "name": 'MAC:',
-                "value": self.controller.get_wireless_mac(),
-            },
-            {
-                "name": 'TXPOWER:',
-                "value": self.controller.get_wireless_txpower(),
-            },
-            {
-                "name": 'IP:',
-                "value": self.controller.get_wireless_ip(),
-            },
-        ]
+        # Double the title height
+        title_height = 26
+        line_height = 13
+        spacing = 2  # Spacing between text lines
+        margin = 10  # Margin for blocks
 
-        info_ap = [
-            {
-                "name": 'SSID:',
-                "value": self.controller.get_wireless_ssid(),
-            },
-            {
-                "name": 'RSSI',
-                "value": self.controller.get_wireless_rssi(),
-            },
-            {
-                "name": 'Channel',
-                "value": self.controller.get_wireless_channel(),
-            },
-        ]
+        # Set title with RED
+        self.display.set_pen(self.RED)
+        self.display.rectangle(0, 0, self.WIDTH, title_height)
+        self.display.set_pen(self.BLUE)
+        self.display.text("Wireless", self.WIDTH // 3, spacing)
 
-        self.display.set_pen(self.ORANGE)
-        self.display.text("MODO D", 100, 100, scale=3)
+        offset_y = title_height
+
+        # Add margin to the top of the client block
+        offset_y += margin
+
+        # Display client info
+        for info in info_client:
+            self.display.set_pen(self.BLACK)
+            self.display.rectangle(0, offset_y, self.WIDTH, line_height)
+            self.display.set_pen(self.GREEN)
+            self.display.text(f"{info['name']} {info['value']}", spacing,
+                              offset_y)
+            offset_y += line_height + spacing
+
+        # Add margin to the bottom of the client block and to the top of the AP block
+        offset_y += margin
+
+        # Draw a single yellow background rectangle for the AP block
+        self.display.set_pen(self.YELLOW)
+        self.display.rectangle(0, offset_y, self.WIDTH,
+                               len(info_ap) * (line_height + spacing) + spacing)
+
+        # Display AP info
+        for info in info_ap:
+            self.display.set_pen(self.BLACK)
+            self.display.text(f"{info['name']} {info['value']}", spacing,
+                              offset_y)
+            offset_y += line_height + spacing
+
+        # Add margin to the bottom of the AP block
+        offset_y += margin
+
         self.display.update()
 
     def prepare_frame_a (self) -> None:

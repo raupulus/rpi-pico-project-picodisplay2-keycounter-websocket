@@ -81,8 +81,11 @@ def updateDisplay(pos, device) -> None:
     :param device: Device to display information for
     :return: None
     """
-    thread_lock.acquire()
+
     global thread_lock_acquired, last_conn_time
+
+    thread_lock_acquired = True
+    thread_lock.acquire()
 
     try:
         display.update(pos, device, True if len(devices) is 1 else False)
@@ -100,30 +103,32 @@ def updateDisplay(pos, device) -> None:
 
         # Si se ha pulsado un botón, lanza el menú correspondiente
         if button_press:
-            thread_lock.acquire()
             thread_lock_acquired = True
-            try:
-                last_conn_time = utime.ticks_ms()
+            thread_lock.acquire()
 
+            try:
                 if env.DEBUG:
                     print('Se ha pulsado el botón:', button_press)
 
                 display.change_mode(button_press)
 
+                if env.DEBUG:
+                    print('Termina el modo', button_press)
+
             except Exception as e:
                 if env.DEBUG:
                     print('Error en la función updateDisplay:', e)
             finally:
-                thread_lock.release()
                 thread_lock_acquired = False
+                thread_lock.release()
 
         # Compruebo si tiene que apagar la pantalla
-        if display.on:
+        if display.on and display.current_mode == 'A':
             diff = utime.ticks_diff(utime.ticks_ms(), last_conn_time)
 
             if diff > env.TIME_TO_DISPLAY_OFF * 60 * 1000:
-                thread_lock.acquire()
                 thread_lock_acquired = True
+                thread_lock.acquire()
 
                 try:
                     if env.DEBUG:
@@ -134,8 +139,8 @@ def updateDisplay(pos, device) -> None:
                     if env.DEBUG:
                         print('Error en la función updateDisplay:', e)
                 finally:
-                    thread_lock.release()
                     thread_lock_acquired = False
+                    thread_lock.release()
 
 
 def thread1 (data):
@@ -144,7 +149,11 @@ def thread1 (data):
     """
     global thread_lock_acquired
 
-    if not thread_lock_acquired:
+    # Preparo datos wireless
+    if display.current_mode == 'D':
+        display.wireless_info_client, display.wireless_info_ap = controller.wireless_info()
+
+    if not thread_lock_acquired and display.current_mode == 'A':
         thread_lock_acquired = True
 
         if env.DEBUG:
@@ -159,10 +168,6 @@ def thread1 (data):
             devices.append(device)
         else:
             device.update(data)
-
-        if env.DEBUG:
-            print('devices:', devices)
-            print('device:', device)
 
         # Inicio un nuevo hilo que llama a updateDisplay(data)
         _thread.start_new_thread(updateDisplay, (pos, device))
@@ -181,8 +186,10 @@ def thread0 ():
     if env.DEBUG:
         print(devices_info)
 
+    display.wireless_info_client, display.wireless_info_ap = controller.wireless_info()
+
     # Iniciamos el servidor WebSocket
-    websocket_server = WebSocketServer(thread1, debug=env.DEBUG)
+    websocket_server = WebSocketServer(controller, thread1, debug=env.DEBUG)
     websocket_server.start()
 
 

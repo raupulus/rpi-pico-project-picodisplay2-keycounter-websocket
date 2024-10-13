@@ -3,7 +3,8 @@ import ujson as json
 
 
 class WebSocketServer:
-    def __init__ (self, callback, debug=False, ip='0.0.0.0', port=80):
+    def __init__ (self, controller, callback, debug=False, ip='0.0.0.0',
+                  port=80):
         """
         Constructor para la clase que representa el servidor de websockets
 
@@ -12,6 +13,7 @@ class WebSocketServer:
         :param ip: Es la ip del servidor
         :param port: Es el puerto del servidor
         """
+        self.controller = controller
         self.callback = callback
         self.ip = ip
         self.port = port
@@ -24,18 +26,33 @@ class WebSocketServer:
 
         :return: None
         """
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind((self.ip, self.port))
-        self.s.listen(1)
 
         while True:
-            conn, addr = self.s.accept()
+            try:
+                self.controller.wifi_connect()
+                self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.s.bind((self.ip, self.port))
+                self.s.listen(1)
 
-            if self.DEBUG:
-                print('Conexión establecida con:', addr)
+                while True:
+                    try:
+                        if not self.controller.wifi_is_connected():
+                            self.controller.wifi_connect()
 
-            # Al existir cliente se maneja la conexión
-            self.handle_client(conn)
+                        conn, addr = self.s.accept()
+
+                        if self.DEBUG:
+                            print('Conexión establecida con:', addr)
+
+                        # Al existir cliente se maneja la conexión
+                        self.handle_client(conn)
+                    except:
+                        if self.DEBUG:
+                            print(
+                                'Error al ejecutar la escucha del servidor en start() dentro del while')
+            except:
+                if self.DEBUG:
+                    print('Error al ejecutar la escucha del servidor en start()')
 
     def handle_client (self, conn) -> None:
         """
@@ -43,7 +60,11 @@ class WebSocketServer:
         """
 
         while True:
-            data = conn.recv(1024)
+            try:
+                data = conn.recv(1024)
+            except Exception as e:
+                print('Error en handle_client', e)
+                break
 
             if data:
                 try:

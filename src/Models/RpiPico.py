@@ -206,7 +206,7 @@ class RpiPico:
         Devuelve la potencia de transmisión del router.
         :return:
         """
-        return self.wifi.config('rssi')
+        return self.wifi.status('rssi')
 
     def get_wireless_channel(self) -> int:
         """
@@ -273,7 +273,49 @@ class RpiPico:
                     self.wifi_debug()
 
                 return True
+
         return False
+
+    def wireless_info (self):
+        info_client = [
+            {
+                "name": 'Connected:',
+                "value": 'Yes' if self.wifi_is_connected() else 'No',
+            },
+            {
+                "name": 'Hostname:',
+                "value": self.get_wireless_hostname(),
+            },
+            {
+                "name": 'MAC:',
+                "value": self.get_wireless_mac(),
+            },
+            {
+                "name": 'TXPOWER:',
+                "value": self.get_wireless_txpower(),
+            },
+            {
+                "name": 'IP:',
+                "value": self.get_wireless_ip(),
+            },
+        ]
+
+        info_ap = [
+            {
+                "name": 'SSID:',
+                "value": self.get_wireless_ssid(),
+            },
+            {
+                "name": 'RSSI',
+                "value": self.get_wireless_rssi(),
+            },
+            {
+                "name": 'Channel',
+                "value": self.get_wireless_channel(),
+            },
+        ]
+
+        return info_client, info_ap
 
     def wifi_disconnect (self) -> None:
         """
