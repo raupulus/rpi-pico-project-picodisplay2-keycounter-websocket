@@ -163,24 +163,71 @@ class RpiPico:
         return bool(
             self.wifi and self.wifi.isconnected() and self.wifi.status() == WIFI_CONNECTED)
 
+    def get_wireless_mac(self) -> str:
+        """
+        Convierte la dirección MAC a formato legible y la devuelve.
+        :return:
+        """
+        import ubinascii
+        import network
+
+        return ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
+
+    def get_wireless_ssid(self) -> str:
+        """
+        Devuelve el SSID al que se ha conectado.
+        :return:
+        """
+        return self.wifi.config('essid')
+
+    def get_wireless_ip(self) -> str:
+        """
+        Devuelve la ip de la conexión actual.
+        :return:
+        """
+        return self.wifi.ifconfig()[0]
+
+    def get_wireless_hostname(self) -> str:
+        """
+        Devuelve el nombre de host en la red.
+        :return:
+        """
+        return self.wifi.config('hostname')
+
+    def get_wireless_txpower(self) -> int:
+        """
+        Devuelve la potencia de transmisión configurada actualmente por la rpi.
+        :return:
+        """
+        return self.wifi.config('txpower')
+
+    def get_wireless_rssi(self) -> int:
+        """
+        Devuelve la potencia de transmisión del router.
+        :return:
+        """
+        return self.wifi.config('rssi')
+
+    def get_wireless_channel(self) -> int:
+        """
+        Devuelve el canal de comunicación con el router.
+        :return:
+        """
+        return self.wifi.config('channel')
+
     def wifi_debug (self) -> None:
         """
         Muestra información de debug de la conexión Wi-Fi.
         """
         print('Conectado a wifi:', self.wifi_is_connected())
         print('Estado del wi-fi:', self.wifi_status())
-        print('Dirección IP Wi-fi:', self.wifi.ifconfig())
-        print('Canal de Wi-fi: ', self.wifi.config('channel'))
-        print('ESSID: ', self.wifi.config('essid'))
-        print('Potencia de transmisión (TXPOWER):', self.wifi.config('txpower'))
-        print('Hostname:', self.wifi.config('hostname'))
-
-        import ubinascii
-        import network
-
-        # Convierte la dirección MAC a formato legible
-        mac = ubinascii.hexlify(network.WLAN().config('mac'), ':').decode()
-        print('Dirección MAC: ', mac)
+        print('Hostname:', self.get_wireless_hostname())
+        print('Dirección MAC: ', self.get_wireless_mac())
+        print('Dirección IP Wi-fi:', self.get_wireless_ip())
+        print('Potencia de transmisión (TXPOWER):', self.get_wireless_txpower())
+        print('SSID: ', self.get_wireless_ssid())
+        print('Canal de Wi-fi: ', self.get_wireless_channel())
+        print('RSSI: ', self.get_wireless_rssi())
 
     def wifi_connect (self, ssid=None, password=None) -> bool:
         """

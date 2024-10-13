@@ -108,7 +108,7 @@ def updateDisplay(pos, device) -> None:
                 if env.DEBUG:
                     print('Se ha pulsado el botón:', button_press)
 
-                # TODO: Implementar acciones de botón
+                display.change_mode(button_press)
 
             except Exception as e:
                 if env.DEBUG:

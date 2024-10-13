@@ -60,7 +60,7 @@ class PicoDisplay2:
         self.display.set_font("bitmap6")
         self.display.set_pen(self.BLACK)
         self.display.clear()
-        self.create_frame()
+        self.prepare_frame_a()
 
     def shutdown (self) -> None:
         """
@@ -72,43 +72,6 @@ class PicoDisplay2:
         self.on = False
         self.display.set_backlight(0.2)
         # self.display.clear()
-
-    def create_frame (self) -> None:
-        """
-        Create a frame on the display with specified border thickness.
-
-        :return: None
-        """
-        # Grosor del trazo para el marco de la pantalla
-        border_thickness = 3
-
-        # Preparo línea para la división Horizontal de la pantalla
-        self.display.set_pen(self.YELLOW)
-        self.display.line(0, self.HEIGHT // 2, self.WIDTH, self.HEIGHT // 2)
-        self.display.update()
-
-        # Dibujo un marco alrededor de la pantalla
-        self.display.set_pen(self.BLUE)
-
-        # Borde superior
-        self.display.line(border_thickness, border_thickness,
-                          self.WIDTH - border_thickness, border_thickness)
-
-        # Borde derecho
-        self.display.line(self.WIDTH - border_thickness, border_thickness,
-                          self.WIDTH - border_thickness,
-                          self.HEIGHT - border_thickness)
-
-        # Borde inferior
-        self.display.line(border_thickness, self.HEIGHT - border_thickness,
-                          self.WIDTH - border_thickness,
-                          self.HEIGHT - border_thickness)
-
-        # Borde izquierdo
-        self.display.line(border_thickness, border_thickness, border_thickness,
-                          self.HEIGHT - border_thickness)
-
-        self.display.update()
 
     def clear (self) -> None:
         """
@@ -132,6 +95,10 @@ class PicoDisplay2:
         :param showbar: boolean indicating whether to display a bar graph (default False)
         :return: None
         """
+
+        if self.current_mode != 'A':
+            return
+
         self.on = True
         self.display.set_backlight(1.0)
         self.led.set_rgb(200, 0, 0)
@@ -299,3 +266,148 @@ class PicoDisplay2:
             return 'D'
 
         return False
+
+    def change_mode(self, mode):
+
+        if mode not in self.MODES:
+            return
+
+        self.current_mode = mode
+        self.on = True
+
+        if mode == 'A':
+            self.mode_a()
+        elif mode == 'B':
+            self.mode_b()
+        elif mode == 'C':
+            self.mode_c()
+        elif mode == 'D':
+            self.mode_d()
+
+    def mode_a(self):
+        """
+        Modo Principal/Normal, muestra los datos recibidos por websocket.
+
+        :return:
+        """
+        self.current_mode = 'A'
+        self.on = True
+        self.clear()
+        self.prepare_frame_a()
+
+    def mode_b(self):
+        """
+        Modo B, muestra los datos de puntuación para la racha y sesión.
+
+        :return:
+        """
+        self.current_mode = 'B'
+        self.on = True
+        self.clear()
+
+        self.display.set_pen(self.ORANGE)
+        self.display.text("MODO B", 100, 100, scale=3)
+        self.display.update()
+
+    def mode_c(self):
+        """
+        Modo C, muestra los datos recibidos desde la API.
+
+        :return:
+        """
+        self.current_mode = 'C'
+        self.on = True
+        self.clear()
+
+        self.display.set_pen(self.ORANGE)
+        self.display.text("MODO C", 100, 100, scale=3)
+        self.display.update()
+
+    def mode_d(self):
+        """
+        Modo D, muestra la información de red.
+
+        :return:
+        """
+        self.current_mode = 'D'
+        self.on = True
+        self.clear()
+
+        info_client = [
+            {
+                "name": 'Contectado:',
+                "value": 'Si' if self.controller.wifi_is_connected() else 'No',
+            },
+            {
+                "name": 'Hostname:',
+                "value": self.controller.get_wireless_hostname(),
+            },
+            {
+                "name": 'MAC:',
+                "value": self.controller.get_wireless_mac(),
+            },
+            {
+                "name": 'TXPOWER:',
+                "value": self.controller.get_wireless_txpower(),
+            },
+            {
+                "name": 'IP:',
+                "value": self.controller.get_wireless_ip(),
+            },
+        ]
+
+        info_ap = [
+            {
+                "name": 'SSID:',
+                "value": self.controller.get_wireless_ssid(),
+            },
+            {
+                "name": 'RSSI',
+                "value": self.controller.get_wireless_rssi(),
+            },
+            {
+                "name": 'Channel',
+                "value": self.controller.get_wireless_channel(),
+            },
+        ]
+
+        self.display.set_pen(self.ORANGE)
+        self.display.text("MODO D", 100, 100, scale=3)
+        self.display.update()
+
+    def prepare_frame_a (self) -> None:
+        """
+        Create a frame on the display with specified border thickness.
+
+        :return: None
+        """
+        # Grosor del trazo para el marco de la pantalla
+        border_thickness = 3
+
+        # Preparo línea para la división Horizontal de la pantalla
+        self.display.set_pen(self.YELLOW)
+        self.display.line(0, self.HEIGHT // 2, self.WIDTH, self.HEIGHT // 2)
+        self.display.update()
+
+        # Dibujo un marco alrededor de la pantalla
+        self.display.set_pen(self.BLUE)
+
+        # Borde superior
+        self.display.line(border_thickness, border_thickness,
+                          self.WIDTH - border_thickness, border_thickness)
+
+        # Borde derecho
+        self.display.line(self.WIDTH - border_thickness, border_thickness,
+                          self.WIDTH - border_thickness,
+                          self.HEIGHT - border_thickness)
+
+        # Borde inferior
+        self.display.line(border_thickness, self.HEIGHT - border_thickness,
+                          self.WIDTH - border_thickness,
+                          self.HEIGHT - border_thickness)
+
+        # Borde izquierdo
+        self.display.line(border_thickness, border_thickness, border_thickness,
+                          self.HEIGHT - border_thickness)
+
+        self.display.update()
