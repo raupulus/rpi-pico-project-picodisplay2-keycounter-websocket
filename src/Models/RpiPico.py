@@ -55,7 +55,9 @@ class RpiPico:
 
         # Si se proporcionan credenciales del AP intenta la conexión
         if ssid and password:
-            print('Iniciando la conexión inalámbrica')
+            if self.DEBUG:
+                print('Iniciando la conexión inalámbrica')
+
             self.wifi_connect(ssid, password)
 
         sleep(0.100)

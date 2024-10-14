@@ -1,6 +1,6 @@
 import usocket as socket
 import ujson as json
-import machine
+
 
 class WebSocketServer:
     def __init__ (self, controller, callback, debug=False, ip='0.0.0.0',
@@ -20,6 +20,8 @@ class WebSocketServer:
         self.s = socket.socket()
         self.DEBUG = debug
 
+        self.lock = False
+
     def start (self) -> None:
         """
         Inicializa la escucha del servidor.
@@ -35,21 +37,21 @@ class WebSocketServer:
 
                 while True:
                     try:
-                        conn, addr = self.s.accept()
+                        if not self.lock:
+                            conn, addr = self.s.accept()
 
-                        if self.DEBUG:
-                            print('Conexión establecida con:', addr)
+                            if self.DEBUG:
+                                print('Conexión establecida con:', addr)
 
-                        # Al existir cliente se maneja la conexión
-                        self.handle_client(conn)
+                            self.lock = True
+                            # Al existir cliente se maneja la conexión
+                            self.handle_client(conn)
                     except Exception as e:
                         if self.DEBUG:
                             print('Error al ejecutar la escucha del servidor en start() dentro del while', e)
+                    finally:
+                        self.lock = False
             except Exception as e:
-                #Esto falla...
-                #if not self.controller.wifi_is_connected():
-                #    self.controller.wifi_connect()
-
                 if self.DEBUG:
                     print('Error al ejecutar la escucha del servidor en start()', e)
 
@@ -82,8 +84,6 @@ class WebSocketServer:
                     conn.close()
 
                     break
-        except socket.timeout:
-            print('Timeout, cerrando conexión.')
 
             conn.close()
         except Exception as e:

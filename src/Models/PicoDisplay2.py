@@ -214,6 +214,8 @@ class PicoDisplay2:
             # Selecciono el color de la barra en función del valor
             if value < 100:
                 self.display.set_pen(self.BLUE)
+            elif 100 <= value < 150:
+                self.display.set_pen(self.YELLOW)
             elif 150 <= value <= 250:
                 self.display.set_pen(self.ORANGE)
             else:

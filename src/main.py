@@ -169,8 +169,15 @@ def thread1 (data):
         else:
             device.update(data)
 
-        # Inicio un nuevo hilo que llama a updateDisplay(data)
-        _thread.start_new_thread(updateDisplay, (pos, device))
+        # Previene que en el otro hilo no le de tiempo a detectar bloqueo
+        sleep_ms(50)
+
+        try:
+            # Inicio un nuevo hilo que llama a updateDisplay(data)
+            _thread.start_new_thread(updateDisplay, (pos, device))
+        except Exception as e:
+            if env.DEBUG:
+                print('Error en thread1 al llamar _thread.start_new_thread:', e)
 
 def thread0 ():
     """
