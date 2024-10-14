@@ -1,6 +1,6 @@
 import usocket as socket
 import ujson as json
-
+import machine
 
 class WebSocketServer:
     def __init__ (self, controller, callback, debug=False, ip='0.0.0.0',
@@ -26,7 +26,6 @@ class WebSocketServer:
 
         :return: None
         """
-
         while True:
             try:
                 self.controller.wifi_connect()
@@ -59,11 +58,14 @@ class WebSocketServer:
         Procesa la recepción de datos.
         """
 
-        while True:
-            data = conn.recv(1024)
+        conn.setblocking(False)
+        conn.settimeout(5.0)  # wait for 5 seconds
 
-            if data:
-                try:
+        try:
+            while True:
+                data = conn.recv(1024)
+
+                if data:
                     data = data.decode('utf-8')
 
                     if self.DEBUG:
@@ -72,15 +74,17 @@ class WebSocketServer:
                     data_dict = json.loads(data)
 
                     if "device_id" in data_dict:
-                        response = json.dumps({'status': 'ok'})
+                        response = json.dumps({ 'status': 'ok' })
                         conn.send(response.encode('utf-8'))
 
                         self.callback(data_dict)
-                except Exception as e:
-                    if self.DEBUG:
-                        print("Error en el manejo de datos: ", e)
+                else:
+                    conn.close()
 
-            else:
-                conn.close()
+                    break
+        except socket.timeout:
+            print('Timeout, cerrando conexión.')
 
-                break
+            conn.close()
+        except Exception as e:
+            print("Error Websocket Server en handle_client(): ", e)
